@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:admob_flutter/admob_flutter.dart';
 import 'package:battery/battery.dart';
@@ -7,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart' as mat show Image;
-import 'package:flutter/material.dart' as mat2;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:gallery_saver/gallery_saver.dart';
 import '/state/points_state.dart';
 import '/widgets/current_path_paint.dart';
 import '/widgets/drawzo_canvas.dart';
@@ -21,7 +20,6 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-//import 'package:gallery_saver/gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
@@ -55,6 +53,7 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
+PhotoViewControllerBase? contP;
 Color oldColor = Colors.black;
 Color corIconeFundo = Colors.white;
 //controle de visualização do meunus
@@ -72,7 +71,8 @@ bool modolapiz = true,
     retasAtuando = false,
     voltarReta = false,
     retaAtiva = false;
-
+AdmobInterstitial? anuncioTelaCheia;
+AdmobInterstitial? anuncioTelaCheia2;
 //controle de cores
 Color corLapis = Colors.black;
 Color ultimacor = Colors.black,
@@ -88,6 +88,9 @@ int controleFitImagem = 0;
 BoxFit fitImagem = BoxFit.scaleDown;
 Uint8List? imagemFundo;
 bool controleFit = false;
+Color corlupa = Colors.white;
+bool controlerotationZoom = false;
+bool controleDragZoom = true;
 
 class _MyHomePageState extends State<MyHomePage> {
   CanvasPathsState currentPointsState = CanvasPathsState();
@@ -116,8 +119,10 @@ class _MyHomePageState extends State<MyHomePage> {
   final Battery _battery = Battery();
   Battery battery = Battery();
   BatteryState? _batteryState;
-  AdmobInterstitial? anuncioTelaCheia;
-  AdmobInterstitial? anuncioTelaCheia2;
+  AdmobInterstitial anuncioTelaCheia =
+      AdmobInterstitial(adUnitId: 'ca-app-pub-3940256099942544/4411468910');
+  AdmobInterstitial anuncioTelaCheia2 =
+      AdmobInterstitial(adUnitId: 'ca-app-pub-3940256099942544/4411468910');
   int controleSalvarBateria = 0;
 
   @override
@@ -130,11 +135,11 @@ class _MyHomePageState extends State<MyHomePage> {
     corIconeFundo = currentPointsState.backgroundColor;
     isDialOpem.value = true;
 
-    /* anuncioTelaCheia = AdmobInterstitial(
+    /*  anuncioTelaCheia = AdmobInterstitial(
       adUnitId: getIDAnuncioTelaCheia(),
       listener: (AdmobAdEvent event, Map<String, dynamic>? args) async {
         if (event == AdmobAdEvent.closed) {
-          anuncioTelaCheia!.load();
+          anuncioTelaCheia.load();
         }
       },
     );
@@ -142,13 +147,13 @@ class _MyHomePageState extends State<MyHomePage> {
       adUnitId: getIDAnuncioTelaCheia2(),
       listener: (AdmobAdEvent event, Map<String, dynamic>? args) async {
         if (event == AdmobAdEvent.closed) {
-          anuncioTelaCheia2!.load();
+          anuncioTelaCheia2.load();
         }
       },
     );
 
-    anuncioTelaCheia!.load();
-    anuncioTelaCheia2!.load();
+    anuncioTelaCheia.load();
+    anuncioTelaCheia2.load();
     batteryacheck();*/
   }
 
@@ -238,10 +243,11 @@ class _MyHomePageState extends State<MyHomePage> {
           }
           if (tipo == 3) {
             //lapís
-
+            controlerotationZoom = false;
+            corlupa = Colors.white;
             zoomAtivo = false;
             imgAtiva = false;
-
+            controleDragZoom = true;
             saturacao = false;
             sizeHESpessura = 0;
             corBollEspessura = Colors.transparent;
@@ -257,11 +263,14 @@ class _MyHomePageState extends State<MyHomePage> {
           }
           if (tipo == 4) {
             //reta
+            controlerotationZoom = false;
+            corlupa = Colors.white;
             retaAtiva = true;
             zoomAtivo = false;
             imgAtiva = false;
             saturacao = false;
             sizeHESpessura = 0;
+            controleDragZoom = true;
             modolapiz = false;
             corBollEspessura = Colors.transparent;
             corBarraEspessura = Colors.transparent;
@@ -285,8 +294,10 @@ class _MyHomePageState extends State<MyHomePage> {
           }
           if (tipo == 7) {
             // borracha
+            controlerotationZoom = false;
+            corlupa = Colors.white;
             zoomAtivo = false;
-
+            controleDragZoom = true;
             coriconLap = Colors.white;
             coriconBorr = const Color.fromRGBO(22, 122, 89, 1);
             saturacao = false;
@@ -331,6 +342,13 @@ class _MyHomePageState extends State<MyHomePage> {
             } else {
               corIconeFundo = currentPointsState.backgroundColor;
             }
+          }
+          if (tipo == 9) {
+            //zoom
+            corlupa = const Color.fromRGBO(22, 122, 89, 1);
+            coriconReta = Colors.white;
+            controleDragZoom = false;
+            controlerotationZoom = true;
           }
         },
         child: FittedBox(
@@ -452,7 +470,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                               ),
                               onPressed: () async {
-                                getImage(0);
+                                await getImage(0);
+                                try {
+                                  anuncioTelaCheia2.show();
+                                } catch (e) {}
 
                                 currentPointsState.backgroundColor =
                                     currentPointsState.backgroundColor
@@ -492,7 +513,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                               onPressed: () async {
                                 getImage(1);
-
+                                try {
+                                  anuncioTelaCheia2.show();
+                                } catch (e) {}
                                 currentPointsState.backgroundColor =
                                     currentPointsState.backgroundColor
                                         .withOpacity(0.4);
@@ -655,14 +678,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  final ImagePicker _picker = ImagePicker();
   getImage(int tipo) async {
-    File? pickedFile;
+    PickedFile? pickedFile;
     if (tipo == 0) {
-      pickedFile = await ImagePicker.pickImage(source: ImageSource.camera);
+      pickedFile = await _picker.getImage(source: ImageSource.camera);
       currentPointsState.backgroundColor =
           currentPointsState.backgroundColor.withOpacity(0.4);
     } else if (tipo == 1) {
-      pickedFile = await ImagePicker.pickImage(source: ImageSource.gallery);
+      pickedFile = await _picker.getImage(source: ImageSource.gallery);
       currentPointsState.backgroundColor =
           currentPointsState.backgroundColor.withOpacity(0.4);
     }
@@ -772,6 +796,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       TextButton(
                         onPressed: () {
                           try {
+                            controleDragZoom = false;
                             currentPointsState.drawColor = ultimacor;
                             corfund = ultimacor;
                             pickerColor = ultimacor;
@@ -1261,25 +1286,29 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Consumer<CanvasPathsState>(
-                          builder: (_, model, child) => Container(
-                            alignment: Alignment.center,
-                            child: Slider(
-                              value: currentPointsState.thickness,
-                              onChanged: (double value) async {
-                                lapizTamanho = value;
-                                currentPointsState.thickness = value;
-                              },
-                              min: 1.0,
-                              max: 100.0,
-                              divisions: 100,
-                              label: currentPointsState.thickness
-                                  .round()
-                                  .toString(),
-                              activeColor: corBollEspessura,
-                              inactiveColor: corBarraEspessura,
-                            ),
-                          ),
+                        Flexible(
+                          child: StatefulBuilder(builder:
+                              (BuildContext context, StateSetter setState) {
+                            return Container(
+                              child: Slider(
+                                value: currentPointsState.thickness,
+                                onChanged: (double value) => setState(() {
+                                  currentPointsState.thickness = value;
+                                  setState(() {
+                                    lapizTamanho = value;
+                                    currentPointsState.thickness = value;
+                                  });
+                                }),
+                                min: 1.0,
+                                max: 100.0,
+                                divisions: 100,
+                                label: currentPointsState.thickness
+                                    .round()
+                                    .toString(),
+                                activeColor: Colors.white,
+                              ),
+                            );
+                          }),
                         ),
                       ],
                     ),
@@ -1324,11 +1353,11 @@ class _MyHomePageState extends State<MyHomePage> {
         } catch (e) {}
 
         try {
-          /* await GallerySaver.saveImage(
+          await GallerySaver.saveImage(
             // Novo salvar
             capturedFile.path,
             albumName: 'Tela Branca',
-          ).then((bool? success) {});*/
+          ).then((bool? success) {});
           capturedFile.delete();
         } catch (e) {}
       } catch (e) {}
@@ -1365,42 +1394,48 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: RepaintBoundary(
                       key: keyRepaintSalvar,
                       child: Consumer<CanvasPathsState>(
-                        builder: (_, model, child) => Stack(
-                          alignment: Alignment.topLeft,
-                          children: [
-                            Positioned(
-                              left: offsetImg.dx,
-                              top: offsetImg.dy,
-                              child: imgVisivel
-                                  ? Container(
-                                      width: sizeW,
-                                      height: sizeH,
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: mat.Image.memory(imagemFundo!)
-                                              .image,
-                                          fit: fitImagem,
+                        builder: (_, model, child) => PhotoView.customChild(
+                          controller: contP,
+                          enableRotation: controlerotationZoom,
+                          disableGestures: controleDragZoom,
+                          child: Stack(
+                            alignment: Alignment.topLeft,
+                            children: [
+                              Positioned(
+                                left: offsetImg.dx,
+                                top: offsetImg.dy,
+                                child: imgVisivel
+                                    ? Container(
+                                        width: sizeW,
+                                        height: sizeH,
+                                        decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                            image:
+                                                mat.Image.memory(imagemFundo!)
+                                                    .image,
+                                            fit: fitImagem,
+                                          ),
                                         ),
-                                      ),
-                                    )
-                                  : Container(),
-                            ),
-                            SizedBox(
-                              width: sizeW,
-                              height: sizeH,
-                              child: Container(
+                                      )
+                                    : Container(),
+                              ),
+                              SizedBox(
                                 width: sizeW,
                                 height: sizeH,
-                                color: currentPointsState.backgroundColor,
+                                child: Container(
+                                  width: sizeW,
+                                  height: sizeH,
+                                  color: currentPointsState.backgroundColor,
+                                ),
                               ),
-                            ),
-                            SizedBox(
-                              width: sizeW,
-                              height: sizeH,
-                              //widget responsavel por chamar as telas de pintura
-                              child: const DrawzoCanvas(),
-                            ),
-                          ],
+                              SizedBox(
+                                width: sizeW,
+                                height: sizeH,
+                                //widget responsavel por chamar as telas de pintura
+                                child: const DrawzoCanvas(),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -1423,18 +1458,18 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                         ),
                         child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            iconsTipo(Icons.undo, 1, Colors.white),
-                            iconsTipo(Icons.redo, 2, Colors.white),
-                            iconsTipo(Icons.create, 3, coriconLap),
-                            iconsTipo(MdiIcons.eraser, 7, coriconBorr),
-                            iconsTipo(Icons.timeline, 4, coriconReta),
-                            iconsTipo(MdiIcons.palette, 5, corLapis),
-                            iconsTipo(Icons.format_paint, 6, corIconeFundo),
-                            iconsTipo(Icons.image_search, 8, Colors.white),
-                          ],
-                        ),
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              iconsTipo(Icons.undo, 1, Colors.white),
+                              iconsTipo(Icons.redo, 2, Colors.white),
+                              iconsTipo(MdiIcons.magnifyPlus, 9, corlupa),
+                              iconsTipo(Icons.create, 3, coriconLap),
+                              iconsTipo(MdiIcons.eraser, 7, coriconBorr),
+                              iconsTipo(Icons.timeline, 4, coriconReta),
+                              iconsTipo(MdiIcons.palette, 5, corLapis),
+                              iconsTipo(Icons.format_paint, 6, corIconeFundo),
+                              iconsTipo(Icons.image_search, 8, Colors.white),
+                            ]),
                       ),
                     ),
                   ),
@@ -1497,6 +1532,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: Icon(iconTipoLapis, color: Colors.white),
                               label: "Lapís Quadrado/Retângulo",
                               onTap: () {
+                                controleDragZoom = false;
                                 // responsavel por mudar a forma do lapis
                                 try {
                                   if (strokeJoin == StrokeJoin.round) {
@@ -1527,6 +1563,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     color: Colors.white),
                                 label: "Preto e Branco",
                                 onTap: () {
+                                  controleDragZoom = false;
                                   currentPointsState.eraseMode = true;
                                   saturacao = true;
                                   pintarFundo = false;
@@ -1541,6 +1578,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     color: Colors.white),
                                 label: "Pintar Fundo",
                                 onTap: () {
+                                  controleDragZoom = false;
                                   currentPointsState.eraseMode = true;
                                   pintarFundo = true;
                                   saturacao = false;
@@ -1622,7 +1660,7 @@ class _MyHomePageState extends State<MyHomePage> {
               backgroundColor: const Color.fromRGBO(32, 176, 128, 1),
               child: const Icon(Icons.save, color: Colors.white),
               label: visivel ? "Salvar" : null,
-              onTap: () {
+              onTap: () async {
                 _salvarImagem();
                 showModalBottomSheet(
                   context: context,
@@ -1632,14 +1670,10 @@ class _MyHomePageState extends State<MyHomePage> {
                     color: Colors.green[400],
                   ),
                 );
+                try {
+                  anuncioTelaCheia.show();
+                } catch (e) {}
               },
-            ),
-            SpeedDialChild(
-              foregroundColor: Colors.white,
-              backgroundColor: const Color.fromRGBO(32, 176, 128, 1),
-              child: const Icon(Icons.share, color: Colors.white),
-              label: visivel ? "Comparilhar" : null,
-              onTap: () {},
             ),
           ],
         ),

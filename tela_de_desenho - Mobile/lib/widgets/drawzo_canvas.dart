@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/points_state.dart';
@@ -10,10 +9,6 @@ class DrawzoCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var sizeW = MediaQuery.of(context).size.width;
-    CanvasPathsState currentPointsState =
-        Provider.of<CanvasPathsState>(context, listen: false);
-    var sizeH = MediaQuery.of(context).size.height;
     //essa classe esta  estruturada de uma forma que se uma das camadas atualiza a outra não muda.
     return Consumer<CanvasPathsState>(
       //responsavel por ouvir a classe CanvasPathsState
