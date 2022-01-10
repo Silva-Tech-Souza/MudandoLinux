@@ -244,10 +244,11 @@ class _MyHomePageState extends State<MyHomePage> {
           if (tipo == 3) {
             //lapís
             controlerotationZoom = false;
+            controleDragZoom = true;
             corlupa = Colors.white;
             zoomAtivo = false;
             imgAtiva = false;
-            controleDragZoom = true;
+
             saturacao = false;
             sizeHESpessura = 0;
             corBollEspessura = Colors.transparent;
@@ -1532,7 +1533,8 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: Icon(iconTipoLapis, color: Colors.white),
                               label: "Lapís Quadrado/Retângulo",
                               onTap: () {
-                                controleDragZoom = false;
+                                controlerotationZoom = false;
+                                controleDragZoom = true;
                                 // responsavel por mudar a forma do lapis
                                 try {
                                   if (strokeJoin == StrokeJoin.round) {
@@ -1563,7 +1565,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     color: Colors.white),
                                 label: "Preto e Branco",
                                 onTap: () {
-                                  controleDragZoom = false;
+                                  controlerotationZoom = false;
+                                  controleDragZoom = true;
                                   currentPointsState.eraseMode = true;
                                   saturacao = true;
                                   pintarFundo = false;
@@ -1578,7 +1581,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     color: Colors.white),
                                 label: "Pintar Fundo",
                                 onTap: () {
-                                  controleDragZoom = false;
+                                  controlerotationZoom = false;
+                                  controleDragZoom = true;
                                   currentPointsState.eraseMode = true;
                                   pintarFundo = true;
                                   saturacao = false;
